@@ -1,7 +1,8 @@
 use std::error::Error; //manejar errores
 use std::fs::File; // leer archivos
 use std::process; // terminar procesos
-use std::time::{Duration, Instant};
+use std::time::{Instant};
+use rand::Rng;
 
 fn read_csv() -> Result<Vec<Vec<u8>>, Box<dyn Error>>{ // -> tipo de dato a devolver, Result devuelve vacio si no hay error, devuelve la funcion si hay un error
     let data = File::open("train.csv")?;
@@ -22,7 +23,7 @@ fn matrix_transpose(matrix: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
     }
     transpose_matrix
 }
-fn matrix_to_string(matrix: &Vec<Vec<u8>>) -> String {
+fn matrix_to_string(matrix: &Vec<Vec<f64>>) -> String {
     matrix.iter().fold("".to_string(), |a, r| {
         a + &r
             .iter()
@@ -31,7 +32,52 @@ fn matrix_to_string(matrix: &Vec<Vec<u8>>) -> String {
     })
 }
 
-fn main() {
+fn init_variables() -> (Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>){
+    let mut hidden_layer1: Vec<Vec<f64>> = Vec::new();
+    let mut hidden_layer2: Vec<Vec<f64>> = Vec::new();
+    let mut bias_layer1: Vec<Vec<f64>> = Vec::new();
+    let mut bias_layer2: Vec<Vec<f64>> = Vec::new();
+    let mut rng = rand::thread_rng();
+    for _row in 0..10{
+        let mut vector: Vec<f64> = Vec::new();
+        for _column in 0..784{
+           let mut random : f64 = rng.gen();
+           random -= 0.5;
+            vector.push(random);
+        }
+        hidden_layer1.push(vector);
+    }
+    for _row in 0..10{
+        let mut vector: Vec<f64> = Vec::new();
+        for _column in 0..1{
+           let mut random : f64 = rng.gen();
+           random -= 0.5;
+            vector.push(random);
+        }
+       bias_layer1.push(vector);
+    }
+    for _row in 0..10{
+        let mut vector: Vec<f64> = Vec::new();
+        for _column in 0..10{
+           let mut random : f64 = rng.gen();
+           random -= 0.5;
+            vector.push(random);
+        }
+       hidden_layer2.push(vector);
+    }
+    for _row in 0..10{
+        let mut vector: Vec<f64> = Vec::new();
+        for _column in 0..1{
+           let mut random : f64 = rng.gen();
+           random -= 0.5;
+            vector.push(random);
+        }
+       bias_layer2.push(vector);
+    }
+    (hidden_layer1,bias_layer1, hidden_layer2, bias_layer2)
+}
+
+fn main(){
     let start = Instant::now();
     let mut data: Vec<Vec<u8>> = Vec::new();
     if let Err(err) = read_csv(){
@@ -52,7 +98,7 @@ fn main() {
        test_data.push(data[i].clone())
     }
     test_data = matrix_transpose(test_data);
-    let digits_test_data = &test_data[0];// Digitos
+    let digits_test_data = &test_data[0];// Columna de los resultados de cada ejemplo
     let mut pixels_test_data : Vec<Vec<u8>> = Vec::new();
     for i in 1..n as usize{
         pixels_test_data.push(test_data[i].clone())
@@ -62,16 +108,16 @@ fn main() {
         train_data.push(data[i].clone())
     }
     train_data = matrix_transpose(train_data);
-    let digits_train_data = &train_data[0];
+    let digits_train_data = &train_data[0]; // Columna de los resultados de cada ejemplo
     let mut pixels_train_data : Vec<Vec<u8>> = Vec::new();
     for i in 1..n as usize{
         pixels_train_data.push(train_data[i].clone())
     }
     println!("{}",pixels_train_data.len());
+   let mut B: (Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>) = init_variables();
+
+    println!("{:?}",&B.2);
     let duration = start.elapsed();
 
-    println!("El tiempo de entrenamiento fue de {:?}", duration)
-
-
-
+    println!("El tiempo de entrenamiento fue de {:?}", duration);
 }
