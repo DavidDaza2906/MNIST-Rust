@@ -77,6 +77,49 @@ fn init_variables() -> (Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64
     (hidden_layer1,bias_layer1, hidden_layer2, bias_layer2)
 }
 
+fn ReLu(){
+
+}
+fn forward_prop(hl1 : Vec<Vec<f64>>,b1: Vec<Vec<f64>>, hl2: Vec<Vec<f64>>, b2: Vec<Vec<f64>>, X: Vec<Vec<f64>>){
+   let z1 : Vec<Vec<f64>> = Vec::new();
+   for h1_row in 0..hl1.len(){ // n son filas de hl1
+    for X_column in 0..X[0].len(){
+        for h1_column in 0..hl1[0].len(){
+
+        } // m son columnas de hl1
+    
+    }
+   }
+
+}
+fn gradient_descent(pixe : Vec<Vec<u8>>, y: Vec<Vec<u8>>, alpha: f64, iterations: u16){
+    let var_array: (Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>) = init_variables();
+    let hidden_layer1 = var_array.0;
+    let bias_layer1 = var_array.1;
+    let hidden_layer2 = var_array.2;
+    let bias_layer2 = var_array.3;
+    for i in 0..iterations{
+
+    }
+
+
+}
+fn dot_product(matrix1 : Vec<Vec<f64>>, matrix2 : Vec<Vec<u8>>){
+    let mut matrix3 : Vec<Vec<f64>> = Vec::new();
+    for matrix1_row in 0..matrix1.len(){ 
+        let mut vec :Vec<f64> = Vec::new();
+        for matrix2_column in 0..matrix2[0].len(){
+            let mut a:f64 = 0.0;
+            for matrix1_column in 0..matrix1[0].len(){
+                a += matrix1[matrix1_row][matrix1_column] * matrix2[matrix1_column][matrix2_column] as f64;
+            }
+            vec.push(a) // m son columnas de hl1
+        }
+        matrix3.push(vec);
+       }
+}
+
+
 fn main(){
     let start = Instant::now();
     let mut data: Vec<Vec<u8>> = Vec::new();
@@ -90,9 +133,7 @@ fn main(){
     let m: u16; //filas
     let mut n: u16 = 0; // columnas
     m = data.len() as u16;
-    for _column in &data[0]{
-        n+=1;
-    }
+    n = data[0].len() as u16;
     let mut test_data: Vec<Vec<u8>> = Vec::new();
     for i in 0..1000{
        test_data.push(data[i].clone())
@@ -109,15 +150,13 @@ fn main(){
     }
     train_data = matrix_transpose(train_data);
     let digits_train_data = &train_data[0]; // Columna de los resultados de cada ejemplo
-    let mut pixels_train_data : Vec<Vec<u8>> = Vec::new();
+    let mut pixels_train_data : Vec<Vec<u8>> = Vec::new(); // pixeles
     for i in 1..n as usize{
         pixels_train_data.push(train_data[i].clone())
     }
-    println!("{}",pixels_train_data.len());
-   let mut B: (Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>) = init_variables();
 
-    println!("{:?}",&B.2);
+    let var_array: (Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>) = init_variables();
+    let xd = var_array.0;
     let duration = start.elapsed();
-
     println!("El tiempo de entrenamiento fue de {:?}", duration);
 }
