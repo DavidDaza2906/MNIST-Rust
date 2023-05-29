@@ -1,162 +1,94 @@
+extern crate ndarray;
 use std::error::Error; //manejar errores
 use std::fs::File; // leer archivos
 use std::process; // terminar procesos
 use std::time::{Instant};
 use rand::Rng;
+use ndarray::prelude::*;
+use ndarray::Array;
+use ndarray::Array2;
+use ndarray_rand::rand_distr::Uniform;
+use ndarray_rand::RandomExt;
 
-fn read_csv() -> Result<Vec<Vec<u8>>, Box<dyn Error>>{ // -> tipo de dato a devolver, Result devuelve vacio si no hay error, devuelve la funcion si hay un error
-    let data = File::open("train.csv")?;
-    let mut rdr = csv::Reader::from_reader(data);
-    let mut data_matrix: Vec<Vec<u8>> = Vec::new();
-    for result in rdr.deserialize(){
-     let record: Vec<u8> = result?;
-        data_matrix.push(record);
-    }
-    Ok(data_matrix)
-}
-fn matrix_transpose(matrix: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
-    let mut transpose_matrix = vec![Vec::with_capacity(matrix.len()); matrix[0].len()];
-    for row in matrix {
-        for column in 0..row.len(){
-            transpose_matrix[column].push(row[column]);
-        }
-    }
-    transpose_matrix
-}
-fn matrix_to_string(matrix: &Vec<Vec<f64>>) -> String {
-    matrix.iter().fold("".to_string(), |a, r| {
-        a + &r
-            .iter()
-            .fold("".to_string(), |b, e| b + "\t" + &e.to_string())
-            + "\n"
-    })
+use csv::ReaderBuilder;
+use ndarray_csv::Array2Reader;
+fn read_csv(path_to_file: &str) -> Result<Array2<f64>, Box<dyn Error>> {
+    let file = File::open(path_to_file)?;
+    let mut reader = ReaderBuilder::new().has_headers(true).from_reader(file);
+    Ok(reader.deserialize_array2((42000, 785))?)
 }
 
-fn init_variables() -> (Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>){
-    let mut hidden_layer1: Vec<Vec<f64>> = Vec::new();
-    let mut hidden_layer2: Vec<Vec<f64>> = Vec::new();
-    let mut bias_layer1: Vec<Vec<f64>> = Vec::new();
-    let mut bias_layer2: Vec<Vec<f64>> = Vec::new();
-    let mut rng = rand::thread_rng();
-    for _row in 0..10{
-        let mut vector: Vec<f64> = Vec::new();
-        for _column in 0..784{
-           let mut random : f64 = rng.gen();
-           random -= 0.5;
-            vector.push(random);
-        }
-        hidden_layer1.push(vector);
-    }
-    for _row in 0..10{
-        let mut vector: Vec<f64> = Vec::new();
-        for _column in 0..1{
-           let mut random : f64 = rng.gen();
-           random -= 0.5;
-            vector.push(random);
-        }
-       bias_layer1.push(vector);
-    }
-    for _row in 0..10{
-        let mut vector: Vec<f64> = Vec::new();
-        for _column in 0..10{
-           let mut random : f64 = rng.gen();
-           random -= 0.5;
-            vector.push(random);
-        }
-       hidden_layer2.push(vector);
-    }
-    for _row in 0..10{
-        let mut vector: Vec<f64> = Vec::new();
-        for _column in 0..1{
-           let mut random : f64 = rng.gen();
-           random -= 0.5;
-            vector.push(random);
-        }
-       bias_layer2.push(vector);
-    }
-    (hidden_layer1,bias_layer1, hidden_layer2, bias_layer2)
+
+fn init_variables() -> (Array2<f64>, Array2<f64>,Array2<f64>, Array2<f64>){
+       let W1 = Array::random((10,784), Uniform::new(0.0, 1.0))-0.5;
+       let b1 = Array::random((10,1), Uniform::new(0.0, 1.0))-0.5;
+       let W2 = Array::random((10,10), Uniform::new(0.0, 1.0))-0.5;
+       let b2 = Array::random((10,1), Uniform::new(0.0, 1.0))-0.5;
+    (W1,b1,W2,b2)
+}
+fn ReLu(X: &Array2<f64>) -> Array2<f64>{
+    X.mapv(|x| x.max(0.0))
+}
+fn softmax(X:&Array2<f64>) -> Array2<f64>{
+    let X_exp = X.mapv(|x| x.exp());
+    let X_sum = X_exp.sum_axis(Axis(0));
+    let X_softmax = X_exp/X_sum;
+    X_softmax
 }
 
-fn ReLu(){
 
+fn forward_prop(W1 : Array2<f64>,b1: Array2<f64>, W2: Array2<f64>, b2: Array2<f64>, X: Array2<f64>) -> (Array2<f64>, Array2<f64>, Array2<f64> ,Array2<f64> ){
+    let Z1 = W1.dot(&X) + &b1;
+    let A1 = ReLu(&Z1);
+    let Z2 = W2.dot(&A1) + &b2;
+    let  A2 = softmax(&Z2);
+    (Z1,A1,Z2,A2)
 }
-fn forward_prop(hl1 : Vec<Vec<f64>>,b1: Vec<Vec<f64>>, hl2: Vec<Vec<f64>>, b2: Vec<Vec<f64>>, X: Vec<Vec<f64>>){
-   let z1 : Vec<Vec<f64>> = Vec::new();
-   for h1_row in 0..hl1.len(){ // n son filas de hl1
-    for X_column in 0..X[0].len(){
-        for h1_column in 0..hl1[0].len(){
-
-        } // m son columnas de hl1
-    
+fn Relu_derivative(Z: &Array2<f64>) -> Array2<f64>{
+    Z.mapv(|x| if x>0.0 {1.0} else {0.0})
+}
+fn one_hot(Y: &Array1<f64>) -> Array2<f64>{
+    let mut Y_one_hot = Array::zeros((Y.len(), 10));
+    for i in 0..Y.len(){
+        Y_one_hot[[Y[i] as usize, i]] = 1.0;
     }
-   }
-
+    Y_one_hot.t().to_owned()
 }
-fn gradient_descent(pixe : Vec<Vec<u8>>, y: Vec<Vec<u8>>, alpha: f64, iterations: u16){
-    let var_array: (Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>) = init_variables();
-    let hidden_layer1 = var_array.0;
-    let bias_layer1 = var_array.1;
-    let hidden_layer2 = var_array.2;
-    let bias_layer2 = var_array.3;
-    for i in 0..iterations{
 
-    }
+fn backward_prop(Z1: Array2<f64>, A1: Array2<f64>, Z2: Array2<f64>, A2: Array2<f64>, W1: Array2<f64>, W2: Array2<f64>, X: Array2<f64>, Y: Array1<f64>){
+    let one_hot_Y = one_hot(&Y);
+    let dZ2 = A2 - one_hot_Y;
+ 
 
-
-}
-fn dot_product(matrix1 : Vec<Vec<f64>>, matrix2 : Vec<Vec<u8>>){
-    let mut matrix3 : Vec<Vec<f64>> = Vec::new();
-    for matrix1_row in 0..matrix1.len(){ 
-        let mut vec :Vec<f64> = Vec::new();
-        for matrix2_column in 0..matrix2[0].len(){
-            let mut a:f64 = 0.0;
-            for matrix1_column in 0..matrix1[0].len(){
-                a += matrix1[matrix1_row][matrix1_column] * matrix2[matrix1_column][matrix2_column] as f64;
-            }
-            vec.push(a) // m son columnas de hl1
-        }
-        matrix3.push(vec);
-       }
 }
 
 
 fn main(){
     let start = Instant::now();
-    let mut data: Vec<Vec<u8>> = Vec::new();
-    if let Err(err) = read_csv(){
-        println!("error:{}",err);
-        process::exit(1);
-    } 
-    else{
-        data = read_csv().unwrap_or_default();
-    } 
-    let m: u16; //filas
-    let mut n: u16 = 0; // columnas
-    m = data.len() as u16;
-    n = data[0].len() as u16;
-    let mut test_data: Vec<Vec<u8>> = Vec::new();
-    for i in 0..1000{
-       test_data.push(data[i].clone())
-    }
-    test_data = matrix_transpose(test_data);
-    let digits_test_data = &test_data[0];// Columna de los resultados de cada ejemplo
-    let mut pixels_test_data : Vec<Vec<u8>> = Vec::new();
-    for i in 1..n as usize{
-        pixels_test_data.push(test_data[i].clone())
-    }
-    let mut train_data: Vec<Vec<u8>> = Vec::new();
-    for i in 1000..m as usize{
-        train_data.push(data[i].clone())
-    }
-    train_data = matrix_transpose(train_data);
-    let digits_train_data = &train_data[0]; // Columna de los resultados de cada ejemplo
-    let mut pixels_train_data : Vec<Vec<u8>> = Vec::new(); // pixeles
-    for i in 1..n as usize{
-        pixels_train_data.push(train_data[i].clone())
-    }
+    let data= read_csv("train.csv").unwrap();
+    let m = data.shape()[0];
+    let n = data.shape()[1];
 
-    let var_array: (Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>) = init_variables();
-    let xd = var_array.0;
+    let binding = data.slice(s![0..1000, ..]);
+    let data_dev = binding.t();
+    let Y_dev = data_dev.slice(s![0, ..]).to_owned();
+    let mut X_dev = data_dev.slice(s![1..n, ..]).to_owned();
+    X_dev = X_dev.mapv(|x| x/255.0);
+    let binding = data.slice(s![1000..m, ..]);
+    let data_train = binding.t();
+    let Y_train = data_train.slice(s![0, ..]).to_owned();
+    let mut X_train = data_train.slice(s![1..n, ..]).to_owned();
+    X_train  = X_train.mapv(|x| x/255.0);
+
+    let (W1,b1,W2,b2) = init_variables();
+    let (Z1,A1,Z2,A2) = forward_prop(W1,b1,W2,b2,X_train);
+
+    one_hot(&Y_train);
+
+
+
+
     let duration = start.elapsed();
     println!("El tiempo de entrenamiento fue de {:?}", duration);
+
 }
